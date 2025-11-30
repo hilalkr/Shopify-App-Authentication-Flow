@@ -1,0 +1,16 @@
+# Go build outputs
+bin/
+dist/
+*.exe
+*.out
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Env / secrets
+.env
+.env.*
