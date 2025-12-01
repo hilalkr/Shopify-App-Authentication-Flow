@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS shops (
+  id BIGSERIAL PRIMARY KEY,
+  shop_domain TEXT NOT NULL UNIQUE,
+  offline_access_token TEXT NOT NULL,
+  scopes TEXT NOT NULL,
+  installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
