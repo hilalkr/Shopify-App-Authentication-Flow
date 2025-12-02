@@ -11,7 +11,6 @@ type Config struct {
 	ShopifyAPIKey    string
 	ShopifyAPISecret string
 	ShopifyScopes    string
-	AppBaseURL       string
 	CallbackURL      string
 }
 
@@ -22,7 +21,6 @@ func Load() Config {
 		ShopifyAPIKey:    mustEnv("SHOPIFY_API_KEY"),
 		ShopifyAPISecret: mustEnv("SHOPIFY_API_SECRET"),
 		ShopifyScopes:    getEnv("SHOPIFY_SCOPES", "read_products"),
-		AppBaseURL:       mustEnv("APP_BASE_URL"),
 		CallbackURL:      mustEnv("OAUTH_CALLBACK_URL"),
 	}
 }

@@ -51,13 +51,24 @@ func (h *Handlers) Login(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
+	// Validate HMAC if present,this prevents unauthorized access by typing shop domain directly
+	hmacParam := c.Query("hmac")
+	if hmacParam != "" {
+		if err := shopify.ValidateHMAC(c.Request.URL.Query(), h.cfg.ShopifyAPISecret); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid hmac signature"})
+			return
+		}
+	}
+
 	_, err := h.shopRepo.GetByDomain(ctx, shop)
 	if err == nil {
-		//  if shhop already exists in DB redirect to dashboard
-		c.Redirect(http.StatusFound, "/dashboard?shop="+url.QueryEscape(shop))
-		return
+		// Shop exists in database
+		if hmacParam != "" {
+			c.Redirect(http.StatusFound, "/dashboard?shop="+url.QueryEscape(shop))
+			return
+		}
 	}
-	if err != repository.ErrNotFound {
+	if err != nil && err != repository.ErrNotFound {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "database error",
 		})
@@ -139,7 +150,7 @@ func (h *Handlers) OAuthCallback(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/dashboard?shop="+url.QueryEscape(shop))
 }
 
-// dummy dashboard it will be change
+// dummy dashboard
 func (h *Handlers) Dashboard(c *gin.Context) {
 	shop := c.Query("shop")
 	if shop == "" {
@@ -164,7 +175,7 @@ func (h *Handlers) Dashboard(c *gin.Context) {
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(http.StatusOK,
-		"<h1>Dashboard (demo)</h1><p>Shop: %s</p><p>Scopes: %s</p><p>Installed: %s</p>",
+		"<h1>Dashboard</h1><p>Shop: %s</p><p>Scopes: %s</p><p>Installed: %s</p>",
 		s.ShopDomain, s.Scopes, s.InstalledAt.Format(time.RFC3339),
 	)
 }
