@@ -78,30 +78,30 @@ cp .env.example .env
 
 macOS / Linux:
 
-   ```sh
-   cat migrations/001_create_shops.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
-   cat migrations/002_create_oauth_states.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
-   ```
+```sh
+cat migrations/001_create_shops.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+cat migrations/002_create_oauth_states.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+```
 
 Windows (PowerShell):
 
-   ```powershell
-   type migrations\001_create_shops.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
-   type migrations\002_create_oauth_states.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
-   ```
+```powershell
+type migrations\001_create_shops.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+type migrations\002_create_oauth_states.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+```
 
 Example `.env`:
 
-   ```env
-   APP_PORT=8080
-   DATABASE_URL=postgres://app:app@localhost:5433/shopify_auth?sslmode=disable
-   SHOPIFY_API_KEY=your_api_key_here
-   SHOPIFY_API_SECRET=your_api_secret_here
-   SHOPIFY_SCOPES=read_products
-   OAUTH_CALLBACK_URL=https://your-subdomain.ngrok-free.dev/auth/callback
-   # Optional: if empty, SHOPIFY_API_SECRET will be used
-   APP_SESSION_SECRET=
-   ```
+```env
+APP_PORT=8080
+DATABASE_URL=postgres://app:app@localhost:5433/shopify_auth?sslmode=disable
+SHOPIFY_API_KEY=your_api_key_here
+SHOPIFY_API_SECRET=your_api_secret_here
+SHOPIFY_SCOPES=read_products
+OAUTH_CALLBACK_URL=https://your-subdomain.ngrok-free.dev/auth/callback
+# Optional: if empty, SHOPIFY_API_SECRET will be used
+APP_SESSION_SECRET=
+```
 
 3. Start the ngrok tunnel
 
@@ -158,7 +158,6 @@ The server listens on `http://localhost:8080`.
 - `shops`: `shop_domain` UNIQUE; stores offline token and scopes; upsert on reinstall.
 - `oauth_states`: `nonce` UNIQUE; `expires_at` TTL. When the nonce is validated in callback, the row is **deleted** (hard delete).
 
-  - Note: the migration includes a `used_at` column, but it is not used by the current implementation.
   - Optional cleanup (for expired nonces when no callback happens):
 
     ```sql

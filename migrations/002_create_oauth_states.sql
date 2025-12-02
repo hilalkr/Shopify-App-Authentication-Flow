@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS oauth_states (
   shop_domain TEXT NOT NULL,
   nonce TEXT NOT NULL UNIQUE, 
   expires_at TIMESTAMPTZ NOT NULL,
-  used_at TIMESTAMPTZ NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
