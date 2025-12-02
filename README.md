@@ -6,7 +6,12 @@ A Shopify OAuth 2.0 demo written in Go. A single `/login` endpoint starts both t
 
 - Single `/login`: if the shop exists in the DB **and the request is Shopify-signed with HMAC**, it redirects to `/dashboard`; otherwise it starts the OAuth flow (install / re-authorization).
 - Offline access token: a long-lived token is stored in the DB; upsert is used on reinstall.
-- Security: Shopify HMAC validation, CSRF protection with nonce (state), `*.myshopify.com` domain validation.
+- Security:
+  - Shopify HMAC validation (callback + Shopify Admin signed entry).
+  - CSRF protection with nonce (state) stored in DB with TTL and single-use consume (delete-on-consume).
+  - `*.myshopify.com` domain validation **and normalization (lowercase + trim)** across endpoints.
+  - `/dashboard` protected with a short-lived signed cookie (`app_session`).
+- Logging: server-side structured error logs via `slog`.
 - Simple demo UI: `/dashboard` returns plain HTML.
 
 ## Stack
@@ -81,6 +86,8 @@ Example `.env`:
     SHOPIFY_API_SECRET=your_api_secret_here
     SHOPIFY_SCOPES=read_products
     OAUTH_CALLBACK_URL=https://your-subdomain.ngrok-free.dev/auth/callback
+    # Optional: if empty, SHOPIFY_API_SECRET will be used
+    APP_SESSION_SECRET=
 
 4. Start the ngrok tunnel
 
@@ -116,16 +123,17 @@ The server listens on `http://localhost:8080`.
   - The offline token is obtained using `code`, the shop is stored (upsert), then it redirects to `/dashboard`.
 
 - `GET /dashboard?shop=<shop-domain>`
-  - Returns shop info from the DB as simple HTML (demo, no session protection).
+  - Returns shop info from the DB as simple HTML.
+  - Requires a valid `app_session` cookie (short-lived, server-signed). The cookie is set after a successful OAuth callback or when opened from Shopify Admin (HMAC-signed).
 
 ## OAuth Flow (summary)
 
 1. `/login?shop=store.myshopify.com`
 2. If the shop is not in the DB (or the request is not Shopify-signed), generate a nonce and store it in the DB with a TTL (10 minutes).
 3. Redirect to Shopify authorize URL with `grant_options[]=offline`.
-4. Shopify returns to `/auth/callback`: HMAC and nonce are validated.
-5. After nonce validation it is deleted from the DB; `code` -> offline token; the shop is upserted.
-6. Redirect to `/dashboard`.
+4. Shopify returns to `/auth/callback`: HMAC and nonce are validated (nonce is single-use).
+5. `code` -> offline token; the shop is upserted.
+6. Server sets a short-lived signed cookie (`app_session`) and redirects to `/dashboard`.
 
 ## Database
 
@@ -141,10 +149,41 @@ The server listens on `http://localhost:8080`.
 
 - **HMAC**: Shopify-signed requests are verified using `SHOPIFY_API_SECRET` (`internal/shopify/hmac.go`).
 - **Nonce/State**: cryptographically random nonce with a 10-minute TTL; validated on callback and deleted from the DB to enforce single-use.
-- **Domain**: `*.myshopify.com` validation via regex (`internal/httpapi/handlers.go`).
+- **Domain**: `*.myshopify.com` validation via regex + normalization (lowercase).
+- **Dashboard**: protected with a short-lived signed cookie (`app_session`) signed with `APP_SESSION_SECRET` (or falls back to `SHOPIFY_API_SECRET` if not provided).
+
+## Tests
+
+### Unit tests
+
+- HMAC validation tests: `internal/shopify/hmac_test.go`
+
+### Integration test (PostgreSQL required)
+
+- OAuth state consume/TTL tests: `internal/repository/state_repository_test.go`
+
+Run (macOS/Linux):
+
+```sh
+docker compose up -d
+
+# Option A: set env explicitly (recommended for CI/VS Code)
+TEST_DATABASE_URL=postgres://app:app@localhost:5433/shopify_auth?sslmode=disable go test ./... -v
+
+# Option B: uses DATABASE_URL from .env (if your test runner loads it)
+go test ./... -v
+```
+
+Windows PowerShell:
+
+```powershell
+docker compose up -d
+$env:TEST_DATABASE_URL="postgres://app:app@localhost:5433/shopify_auth?sslmode=disable"
+go test ./... -v
+```
 
 ## Manual Test
 
-- First install: `/login?shop=...` -> approve in Shopify -> `/dashboard`.
-- Existing shop: open the app from Shopify Admin (HMAC-signed request) -> expect direct `/dashboard`.
-- Reinstall: uninstall and install again; token/scope are updated.
+- First install: `/login?shop=...` -> approve in Shopify -> redirected to `/dashboard` (cookie set).
+- Existing shop: open the app from Shopify Admin (HMAC-signed request) -> cookie set -> `/dashboard`.
+- Direct access: calling `/dashboard?shop=...` without `app_session` cookie should return `401 Unauthorized`.

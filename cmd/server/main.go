@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"log/slog"
+	"os"
 	"shopify-auth-app/internal/config"
 	"shopify-auth-app/internal/db"
 	"shopify-auth-app/internal/httpapi"
@@ -14,6 +16,9 @@ func main() {
 	_ = godotenv.Load()
 
 	cfg := config.Load()
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
 
 	// db connection
 	pool, err := db.Connect(cfg.DatabaseURL)
@@ -25,7 +30,7 @@ func main() {
 	shopRepo := repository.NewShopRepository(pool)
 	stateRepo := repository.NewStateRepository(pool)
 
-	handlers := httpapi.NewHandlers(cfg, shopRepo, stateRepo)
+	handlers := httpapi.NewHandlers(cfg, shopRepo, stateRepo, logger)
 	r := httpapi.NewRouter(handlers)
 
 	addr := ":" + cfg.AppPort
