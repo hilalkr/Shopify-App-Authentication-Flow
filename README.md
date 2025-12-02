@@ -23,31 +23,33 @@ A Shopify OAuth 2.0 demo written in Go. A single `/login` endpoint starts both t
 
 ## Project Structure
 
-    .
-    +-- cmd/
-    |   +-- server/
-    |       +-- main.go
-    +-- internal/
-    |   +-- config/
-    |   |   +-- config.go
-    |   +-- db/
-    |   |   +-- db.go
-    |   +-- httpapi/
-    |   |   +-- handlers.go
-    |   |   +-- router.go
-    |   +-- repository/
-    |   |   +-- shop_repository.go
-    |   |   +-- state_repository.go
-    |   +-- shopify/
-    |       +-- authorize.go
-    |       +-- hmac.go
-    |       +-- token.go
-    +-- migrations/
-    |   +-- 001_create_shops.sql
-    |   +-- 002_create_oauth_states.sql
-    +-- docker-compose.yml
-    +-- .env.example
-    +-- go.mod
+```text
+.
++-- cmd/
+|   +-- server/
+|       +-- main.go
++-- internal/
+|   +-- config/
+|   |   +-- config.go
+|   +-- db/
+|   |   +-- db.go
+|   +-- httpapi/
+|   |   +-- handlers.go
+|   |   +-- router.go
+|   +-- repository/
+|   |   +-- shop_repository.go
+|   |   +-- state_repository.go
+|   +-- shopify/
+|       +-- authorize.go
+|       +-- hmac.go
+|       +-- token.go
++-- migrations/
+|   +-- 001_create_shops.sql
+|   +-- 002_create_oauth_states.sql
++-- docker-compose.yml
++-- .env.example
++-- go.mod
+```
 
 ## Requirements
 
@@ -58,59 +60,67 @@ A Shopify OAuth 2.0 demo written in Go. A single `/login` endpoint starts both t
 
 ## Quickstart
 
-````sh
+```sh
 git clone https://github.com/hilalkr/Shopify-App-Authentication-Flow
 cd shopify-auth-app
 cp .env.example .env
-
+```
 
 ## Setup
 
 1. Start PostgreSQL
 
+   ```sh
    docker compose up -d
+   ```
 
 2. Run migrations
 
 macOS / Linux:
 
-    cat migrations/001_create_shops.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
-    cat migrations/002_create_oauth_states.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+   ```sh
+   cat migrations/001_create_shops.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+   cat migrations/002_create_oauth_states.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+   ```
 
 Windows (PowerShell):
 
-    type migrations\001_create_shops.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
-    type migrations\002_create_oauth_states.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
-
-3. Configure environment variables
-
-   cp .env.example .env
+   ```powershell
+   type migrations\001_create_shops.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+   type migrations\002_create_oauth_states.sql | docker exec -i shopify_auth_db psql -U app -d shopify_auth
+   ```
 
 Example `.env`:
 
-    APP_PORT=8080
-    DATABASE_URL=postgres://app:app@localhost:5433/shopify_auth?sslmode=disable
-    SHOPIFY_API_KEY=your_api_key_here
-    SHOPIFY_API_SECRET=your_api_secret_here
-    SHOPIFY_SCOPES=read_products
-    OAUTH_CALLBACK_URL=https://your-subdomain.ngrok-free.dev/auth/callback
-    # Optional: if empty, SHOPIFY_API_SECRET will be used
-    APP_SESSION_SECRET=
+   ```env
+   APP_PORT=8080
+   DATABASE_URL=postgres://app:app@localhost:5433/shopify_auth?sslmode=disable
+   SHOPIFY_API_KEY=your_api_key_here
+   SHOPIFY_API_SECRET=your_api_secret_here
+   SHOPIFY_SCOPES=read_products
+   OAUTH_CALLBACK_URL=https://your-subdomain.ngrok-free.dev/auth/callback
+   # Optional: if empty, SHOPIFY_API_SECRET will be used
+   APP_SESSION_SECRET=
+   ```
 
-4. Start the ngrok tunnel
+3. Start the ngrok tunnel
 
+   ```sh
    ngrok http 8080
+   ```
 
 Update the HTTPS URL in `.env` (`OAUTH_CALLBACK_URL`) and in your Shopify app settings.
 
-5. Shopify app settings
+4. Shopify app settings
 
 - App URL: `https://<ngrok-host>/login`
 - Allowed redirection URL(s): `https://<ngrok-host>/auth/callback`
 
-6. Run the server
+5. Run the server
 
+   ```sh
    go run cmd/server/main.go
+   ```
 
 The server listens on `http://localhost:8080`.
 
@@ -151,7 +161,9 @@ The server listens on `http://localhost:8080`.
   - Note: the migration includes a `used_at` column, but it is not used by the current implementation.
   - Optional cleanup (for expired nonces when no callback happens):
 
-        DELETE FROM oauth_states WHERE expires_at < NOW();
+    ```sql
+    DELETE FROM oauth_states WHERE expires_at < NOW();
+    ```
 
 ## Security
 
@@ -180,7 +192,7 @@ TEST_DATABASE_URL=postgres://app:app@localhost:5433/shopify_auth?sslmode=disable
 
 # Option B: uses DATABASE_URL from .env (if your test runner loads it)
 go test ./... -v
-````
+```
 
 Windows PowerShell:
 
