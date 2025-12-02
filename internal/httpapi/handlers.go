@@ -92,6 +92,53 @@ func (h *Handlers) Login(c *gin.Context) {
 	c.Redirect(http.StatusFound, authURL)
 }
 
+func (h *Handlers) OAuthCallback(c *gin.Context) {
+	shop := c.Query("shop")
+	code := c.Query("code")
+	hmacParam := c.Query("hmac")
+	state := c.Query("state")
+	_ = c.Query("timestamp")
+
+	if shop == "" || code == "" || hmacParam == "" || state == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing required parameters"})
+		return
+	}
+
+	if err := shopify.ValidateHMAC(c.Request.URL.Query(), h.cfg.ShopifyAPISecret); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid hmac signature"})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	//state validation, check nonce is valid and not expred
+	valid, err := h.stateRepo.Consume(ctx, shop, state)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate state"})
+		return
+	}
+	if !valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired state parameter"})
+		return
+	}
+
+	//token exchange convert authorization code to access token
+	tokenResp, err := shopify.ExchangeCodeForToken(shop, h.cfg.ShopifyAPIKey, h.cfg.ShopifyAPISecret, code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to exchange token"})
+		return
+	}
+
+	//save shop to database with the access token
+	_, err = h.shopRepo.Upsert(ctx, shop, tokenResp.AccessToken, tokenResp.Scope)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save shop"})
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/dashboard?shop="+url.QueryEscape(shop))
+}
+
 // dummy dashboard it will be change
 func (h *Handlers) Dashboard(c *gin.Context) {
 	shop := c.Query("shop")

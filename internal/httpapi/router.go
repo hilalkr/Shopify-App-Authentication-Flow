@@ -13,6 +13,7 @@ func NewRouter(h *Handlers) *gin.Engine {
 
 	r.GET("/health", h.Health)
 	r.GET("/login", h.Login)
+	r.GET("/auth/callback", h.OAuthCallback)
 	r.GET("/dashboard", h.Dashboard)
 
 	return r

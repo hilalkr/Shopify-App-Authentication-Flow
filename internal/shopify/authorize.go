@@ -17,6 +17,7 @@ func BuildAuthorizeURL(shopDomain, apiKey, scopes, redirectURI, state string) (s
 	q.Set("scope", scopes)
 	q.Set("redirect_uri", redirectURI)
 	q.Set("state", state)
+	q.Add("grant_options[]", "offline")
 	u.RawQuery = q.Encode()
 
 	if shopDomain == "" || apiKey == "" || scopes == "" || redirectURI == "" || state == "" {
