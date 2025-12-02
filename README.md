@@ -56,6 +56,14 @@ A Shopify OAuth 2.0 demo written in Go. A single `/login` endpoint starts both t
 - Shopify Partners account and a development store
 - ngrok (or a similar HTTPS tunnel)
 
+## Quickstart
+
+````sh
+git clone https://github.com/hilalkr/Shopify-App-Authentication-Flow
+cd shopify-auth-app
+cp .env.example .env
+
+
 ## Setup
 
 1. Start PostgreSQL
@@ -172,7 +180,7 @@ TEST_DATABASE_URL=postgres://app:app@localhost:5433/shopify_auth?sslmode=disable
 
 # Option B: uses DATABASE_URL from .env (if your test runner loads it)
 go test ./... -v
-```
+````
 
 Windows PowerShell:
 
